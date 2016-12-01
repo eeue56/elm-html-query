@@ -1,6 +1,8 @@
 module ElmHtml.Query
     exposing
         ( query
+        , queryChildren
+        , queryChildrenAll
         , queryById
         , queryByClassName
         , queryByClassList
@@ -14,7 +16,7 @@ module ElmHtml.Query
 {-|
 Query things using ElmHtml
 
-@docs query, queryAll, queryInNode
+@docs query, queryAll, queryChildren, queryChildrenAll, queryInNode
 @docs Selector
 @docs queryById, queryByClassName, queryByClassList, queryByTagName, queryByAttribute, queryByBoolAttribute
 -}
@@ -96,15 +98,39 @@ queryAll selectors =
     query (Multiple selectors)
 
 
+{-| Query a Html element using a selector, without considering
+any descendants lower than its immediate children.
+-}
+queryChildren : Selector -> ElmHtml -> List ElmHtml
+queryChildren =
+    queryInNodeHelp False
+
+
+{-| Query to ensure a html node has all selectors given, without considering
+any descendants lower than its immediate children.
+-}
+queryChildrenAll : List Selector -> ElmHtml -> List ElmHtml
+queryChildrenAll selectors =
+    queryInNodeHelp False (Multiple selectors)
+
+
 {-| Query a Html node using a selector
 -}
 queryInNode : Selector -> ElmHtml -> List ElmHtml
-queryInNode selector node =
+queryInNode =
+    queryInNodeHelp True
+
+
+queryInNodeHelp : Bool -> Selector -> ElmHtml -> List ElmHtml
+queryInNodeHelp recurse selector node =
     case node of
         NodeEntry record ->
             let
                 mapChildren children =
-                    List.concatMap (queryInNode selector) children
+                    if recurse then
+                        List.concatMap (queryInNode selector) children
+                    else
+                        []
 
                 predicate =
                     predicateFromSelector selector
