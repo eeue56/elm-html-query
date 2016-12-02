@@ -13,6 +13,7 @@ module ElmHtml.Query
         , queryInNode
         , Selector(..)
         )
+
 {-|
 Query things using ElmHtml
 
@@ -147,11 +148,12 @@ queryInNodeHelp recurse selector node =
                         [ node ]
                     else
                         []
+
                 _ ->
                     []
+
         _ ->
             []
-
 
 
 predicateFromSelector : Selector -> (NodeRecord -> Bool)
