@@ -104,7 +104,7 @@ any descendants lower than its immediate children.
 -}
 queryChildren : Selector -> ElmHtml -> List ElmHtml
 queryChildren =
-    queryInNodeHelp False
+    queryInNodeHelp (Just 1)
 
 
 {-| Query to ensure a html node has all selectors given, without considering
@@ -112,34 +112,45 @@ any descendants lower than its immediate children.
 -}
 queryChildrenAll : List Selector -> ElmHtml -> List ElmHtml
 queryChildrenAll selectors =
-    queryInNodeHelp False (Multiple selectors)
+    queryInNodeHelp (Just 1) (Multiple selectors)
 
 
 {-| Query a Html node using a selector
 -}
 queryInNode : Selector -> ElmHtml -> List ElmHtml
 queryInNode =
-    queryInNodeHelp True
+    queryInNodeHelp Nothing
 
 
-queryInNodeHelp : Bool -> Selector -> ElmHtml -> List ElmHtml
-queryInNodeHelp recurse selector node =
+queryInNodeHelp : Maybe Int -> Selector -> ElmHtml -> List ElmHtml
+queryInNodeHelp maxDescendantDepth selector node =
     case node of
         NodeEntry record ->
             let
-                mapChildren children =
-                    if recurse then
-                        List.concatMap (queryInNode selector) children
-                    else
-                        []
+                childEntries =
+                    case maxDescendantDepth of
+                        Nothing ->
+                            -- No maximum, so continue.
+                            List.concatMap
+                                (queryInNodeHelp Nothing selector)
+                                record.children
+
+                        Just depth ->
+                            if depth > 0 then
+                                -- Continue with maximum depth reduced by 1.
+                                List.concatMap
+                                    (queryInNodeHelp (Just (depth - 1)) selector)
+                                    record.children
+                            else
+                                []
 
                 predicate =
                     predicateFromSelector selector
             in
                 if predicate record then
-                    [ node ] ++ (mapChildren record.children)
+                    node :: childEntries
                 else
-                    mapChildren record.children
+                    childEntries
 
         TextTag { text } ->
             case selector of
