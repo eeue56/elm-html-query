@@ -92,15 +92,16 @@ query selector =
     queryInNode selector
 
 
-{-| Query to ensure a html node has all selectors given
+{-| Query a Html node using multiple selectors, considering both the node itself
+as well as all of its descendants.
 -}
 queryAll : List Selector -> ElmHtml -> List ElmHtml
 queryAll selectors =
     query (Multiple selectors)
 
 
-{-| Query a Html element using a selector, without considering
-any descendants lower than its immediate children.
+{-| Query a Html node using a selector, considering both the node itself
+as well as all of its descendants.
 -}
 queryChildren : Selector -> ElmHtml -> List ElmHtml
 queryChildren =
@@ -115,7 +116,8 @@ queryChildrenAll selectors =
     queryInNodeHelp (Just 1) (Multiple selectors)
 
 
-{-| Query a Html node using a selector
+{-| Query a Html node using a selector, considering both the node itself
+as well as all of its descendants.
 -}
 queryInNode : Selector -> ElmHtml -> List ElmHtml
 queryInNode =
