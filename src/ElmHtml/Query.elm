@@ -130,21 +130,7 @@ queryInNodeHelp maxDescendantDepth selector node =
         NodeEntry record ->
             let
                 childEntries =
-                    case maxDescendantDepth of
-                        Nothing ->
-                            -- No maximum, so continue.
-                            List.concatMap
-                                (queryInNodeHelp Nothing selector)
-                                record.children
-
-                        Just depth ->
-                            if depth > 0 then
-                                -- Continue with maximum depth reduced by 1.
-                                List.concatMap
-                                    (queryInNodeHelp (Just (depth - 1)) selector)
-                                    record.children
-                            else
-                                []
+                    descendInQuery maxDescendantDepth selector record.children
 
                 predicate =
                     predicateFromSelector selector
@@ -167,6 +153,25 @@ queryInNodeHelp maxDescendantDepth selector node =
 
         _ ->
             []
+
+
+descendInQuery : Maybe Int -> Selector -> List ElmHtml -> List ElmHtml
+descendInQuery maxDescendantDepth selector children =
+    case maxDescendantDepth of
+        Nothing ->
+            -- No maximum, so continue.
+            List.concatMap
+                (queryInNodeHelp Nothing selector)
+                children
+
+        Just depth ->
+            if depth > 0 then
+                -- Continue with maximum depth reduced by 1.
+                List.concatMap
+                    (queryInNodeHelp (Just (depth - 1)) selector)
+                    children
+            else
+                []
 
 
 predicateFromSelector : Selector -> (NodeRecord -> Bool)
