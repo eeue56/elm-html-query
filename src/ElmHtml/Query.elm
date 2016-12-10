@@ -131,11 +131,8 @@ queryInNodeHelp maxDescendantDepth selector node =
             let
                 childEntries =
                     descendInQuery maxDescendantDepth selector record.children
-
-                predicate =
-                    predicateFromSelector selector
             in
-                if predicate record then
+                if predicateFromSelector selector node then
                     node :: childEntries
                 else
                     childEntries
@@ -143,14 +140,19 @@ queryInNodeHelp maxDescendantDepth selector node =
         TextTag { text } ->
             case selector of
                 ContainsText innerText ->
-                    if text == innerText then
+                    if String.contains innerText text then
                         [ node ]
                     else
                         []
 
-                _ ->
-                    []
+                _ -> []
 
+        MarkdownNode { facts, model } ->
+            case selector of
+                if predicateFromSelector selector node then
+                    [ node ]
+                else
+                    []
         _ ->
             []
 
@@ -174,43 +176,29 @@ descendInQuery maxDescendantDepth selector children =
                 []
 
 
-predicateFromSelector : Selector -> (NodeRecord -> Bool)
-predicateFromSelector selector =
-    case selector of
-        Id id ->
-            hasAttribute "id" id
+predicateFromSelector : Selector -> ElmHtml -> Bool
+predicateFromSelector selector html =
+    case html of
+        NodeEntry record ->
+            record
+                |> nodeRecordPredicate selector
 
-        ClassName classname ->
-            hasClass classname
+        MarkdownNode markdownModel ->
+            markdownModel
+                |> markdownPredicate selector
 
-        ClassList classList ->
-            hasClasses classList
-
-        Tag tag ->
-            (==) tag << .tag
-
-        Attribute key value ->
-            hasAttribute key value
-
-        BoolAttribute key value ->
-            hasBoolAttribute key value
-
-        ContainsText text ->
-            always False
-
-        Multiple selectors ->
-            hasAllSelectors selectors
+        _ -> False
 
 
-hasAllSelectors : List Selector -> NodeRecord -> Bool
+hasAllSelectors : List Selector -> ElmHtml -> Bool
 hasAllSelectors selectors record =
     List.map predicateFromSelector selectors
         |> List.map (\selector -> selector record)
         |> List.all identity
 
 
-hasAttribute : String -> String -> NodeRecord -> Bool
-hasAttribute attribute query { facts } =
+hasAttribute : String -> String -> Facts -> Bool
+hasAttribute attribute query facts =
     case Dict.get attribute facts.stringAttributes of
         Just id ->
             id == query
@@ -219,8 +207,8 @@ hasAttribute attribute query { facts } =
             False
 
 
-hasBoolAttribute : String -> Bool -> NodeRecord -> Bool
-hasBoolAttribute attribute value { facts } =
+hasBoolAttribute : String -> Bool -> Facts -> Bool
+hasBoolAttribute attribute value facts =
     case Dict.get attribute facts.boolAttributes of
         Just id ->
             id == value
@@ -229,18 +217,18 @@ hasBoolAttribute attribute value { facts } =
             False
 
 
-hasClass : String -> NodeRecord -> Bool
-hasClass query record =
-    List.member query (classnames record)
+hasClass : String -> Facts -> Bool
+hasClass query facts =
+    List.member query (classnames facts)
 
 
-hasClasses : List String -> NodeRecord -> Bool
-hasClasses classList record =
-    containsAll classList (classnames record)
+hasClasses : List String -> Facts -> Bool
+hasClasses classList facts =
+    containsAll classList (classnames facts)
 
 
-classnames : NodeRecord -> List String
-classnames { facts } =
+classnames : Facts -> List String
+classnames facts =
     Dict.get "className" facts.stringAttributes
         |> Maybe.withDefault ""
         |> String.split " "
@@ -251,3 +239,75 @@ containsAll a b =
     b
         |> List.foldl (\i acc -> List.filter ((/=) i) acc) a
         |> List.isEmpty
+
+
+
+nodeRecordPredicate : Selector -> (NodeRecord -> Bool)
+nodeRecordPredicate selector =
+    case selector of
+        Id id ->
+            .facts
+                >> hasAttribute "id" id
+
+        ClassName classname ->
+            .facts
+                >> hasClass classname
+
+        ClassList classList ->
+            .facts
+                >> hasClasses classList
+
+        Tag tag ->
+            .tag
+                >> (==) tag
+
+        Attribute key value ->
+            .facts
+                >> hasAttribute key value
+
+        BoolAttribute key value ->
+            .facts
+                >> hasBoolAttribute key value
+
+        ContainsText text ->
+            always False
+
+        Multiple selectors ->
+            NodeEntry
+                 >> hasAllSelectors selectors
+
+
+markdownPredicate : Selector -> (MarkdownNodeRecord -> Bool)
+markdownPredicate selector =
+    case selector of
+        Id id ->
+            .facts
+                >> hasAttribute "id" id
+
+        ClassName classname ->
+            .facts
+                >> hasClass classname
+
+        ClassList classList ->
+            .facts
+                >> hasClasses classList
+
+        Tag tag ->
+            always False
+
+        Attribute key value ->
+            .facts
+                >> hasAttribute key value
+
+        BoolAttribute key value ->
+            .facts
+                >> hasBoolAttribute key value
+
+        ContainsText text ->
+            .model
+                >> .markdown
+                >> String.contains text
+
+        Multiple selectors ->
+            MarkdownNode
+                >> hasAllSelectors selectors
