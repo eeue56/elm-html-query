@@ -85,14 +85,14 @@ queryByBoolAttribute key value =
     query (BoolAttribute key value)
 
 
-{-| Query a Html element using a selector
+{-| Query an ElmHtml element using a selector, searching all children.
 -}
 query : Selector -> ElmHtml -> List ElmHtml
 query selector =
     queryInNode selector
 
 
-{-| Query a Html node using multiple selectors, considering both the node itself
+{-| Query an ElmHtml node using multiple selectors, considering both the node itself
 as well as all of its descendants.
 -}
 queryAll : List Selector -> ElmHtml -> List ElmHtml
@@ -100,14 +100,14 @@ queryAll selectors =
     query (Multiple selectors)
 
 
-{-| Query a Html node using a selector, considering both the node itself
+{-| Query an ElmHtml node using a selector, considering both the node itself
 as well as all of its descendants.
 -}
 queryInNode : Selector -> ElmHtml -> List ElmHtml
 queryInNode =
     queryInNodeHelp Nothing
 
-{-| Query a Html node using a selector, considering both the node itself
+{-| Query an ElmHtml node using a selector, considering both the node itself
 as well as all of its descendants.
 -}
 queryChildren : Selector -> ElmHtml -> List ElmHtml
@@ -115,7 +115,7 @@ queryChildren =
     queryInNodeHelp (Just 1)
 
 
-{-| Query to ensure a html node has all selectors given, without considering
+{-| Query to ensure an ElmHtml node has all selectors given, without considering
 any descendants lower than its immediate children.
 -}
 queryChildrenAll : List Selector -> ElmHtml -> List ElmHtml
