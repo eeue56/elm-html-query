@@ -1,6 +1,8 @@
 module ElmHtml.Query
     exposing
         ( query
+        , queryChildren
+        , queryChildrenAll
         , queryById
         , queryByClassName
         , queryByClassList
@@ -11,10 +13,11 @@ module ElmHtml.Query
         , queryInNode
         , Selector(..)
         )
+
 {-|
 Query things using ElmHtml
 
-@docs query, queryAll, queryInNode
+@docs query, queryAll, queryChildren, queryChildrenAll, queryInNode
 @docs Selector
 @docs queryById, queryByClassName, queryByClassList, queryByTagName, queryByAttribute, queryByBoolAttribute
 -}
@@ -89,30 +92,53 @@ query selector =
     queryInNode selector
 
 
-{-| Query to ensure a html node has all selectors given
+{-| Query a Html node using multiple selectors, considering both the node itself
+as well as all of its descendants.
 -}
 queryAll : List Selector -> ElmHtml -> List ElmHtml
 queryAll selectors =
     query (Multiple selectors)
 
 
-{-| Query a Html node using a selector
+{-| Query a Html node using a selector, considering both the node itself
+as well as all of its descendants.
+-}
+queryChildren : Selector -> ElmHtml -> List ElmHtml
+queryChildren =
+    queryInNodeHelp (Just 1)
+
+
+{-| Query to ensure a html node has all selectors given, without considering
+any descendants lower than its immediate children.
+-}
+queryChildrenAll : List Selector -> ElmHtml -> List ElmHtml
+queryChildrenAll selectors =
+    queryInNodeHelp (Just 1) (Multiple selectors)
+
+
+{-| Query a Html node using a selector, considering both the node itself
+as well as all of its descendants.
 -}
 queryInNode : Selector -> ElmHtml -> List ElmHtml
-queryInNode selector node =
+queryInNode =
+    queryInNodeHelp Nothing
+
+
+queryInNodeHelp : Maybe Int -> Selector -> ElmHtml -> List ElmHtml
+queryInNodeHelp maxDescendantDepth selector node =
     case node of
         NodeEntry record ->
             let
-                mapChildren children =
-                    List.concatMap (queryInNode selector) children
+                childEntries =
+                    descendInQuery maxDescendantDepth selector record.children
 
                 predicate =
                     predicateFromSelector selector
             in
                 if predicate record then
-                    [ node ] ++ (mapChildren record.children)
+                    node :: childEntries
                 else
-                    mapChildren record.children
+                    childEntries
 
         TextTag { text } ->
             case selector of
@@ -121,11 +147,31 @@ queryInNode selector node =
                         [ node ]
                     else
                         []
+
                 _ ->
                     []
+
         _ ->
             []
 
+
+descendInQuery : Maybe Int -> Selector -> List ElmHtml -> List ElmHtml
+descendInQuery maxDescendantDepth selector children =
+    case maxDescendantDepth of
+        Nothing ->
+            -- No maximum, so continue.
+            List.concatMap
+                (queryInNodeHelp Nothing selector)
+                children
+
+        Just depth ->
+            if depth > 0 then
+                -- Continue with maximum depth reduced by 1.
+                List.concatMap
+                    (queryInNodeHelp (Just (depth - 1)) selector)
+                    children
+            else
+                []
 
 
 predicateFromSelector : Selector -> (NodeRecord -> Bool)
