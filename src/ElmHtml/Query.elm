@@ -1,6 +1,9 @@
 module ElmHtml.Query
     exposing
-        ( query
+        ( Selector(..)
+        , query
+        , queryAll
+        , queryInNode
         , queryChildren
         , queryChildrenAll
         , queryById
@@ -9,16 +12,13 @@ module ElmHtml.Query
         , queryByTagName
         , queryByAttribute
         , queryByBoolAttribute
-        , queryAll
-        , queryInNode
-        , Selector(..)
         )
 
 {-|
 Query things using ElmHtml
 
-@docs query, queryAll, queryChildren, queryChildrenAll, queryInNode
 @docs Selector
+@docs query, queryAll, queryChildren, queryChildrenAll, queryInNode
 @docs queryById, queryByClassName, queryByClassList, queryByTagName, queryByAttribute, queryByBoolAttribute
 -}
 
@@ -103,6 +103,13 @@ queryAll selectors =
 {-| Query a Html node using a selector, considering both the node itself
 as well as all of its descendants.
 -}
+queryInNode : Selector -> ElmHtml -> List ElmHtml
+queryInNode =
+    queryInNodeHelp Nothing
+
+{-| Query a Html node using a selector, considering both the node itself
+as well as all of its descendants.
+-}
 queryChildren : Selector -> ElmHtml -> List ElmHtml
 queryChildren =
     queryInNodeHelp (Just 1)
@@ -114,14 +121,6 @@ any descendants lower than its immediate children.
 queryChildrenAll : List Selector -> ElmHtml -> List ElmHtml
 queryChildrenAll selectors =
     queryInNodeHelp (Just 1) (Multiple selectors)
-
-
-{-| Query a Html node using a selector, considering both the node itself
-as well as all of its descendants.
--}
-queryInNode : Selector -> ElmHtml -> List ElmHtml
-queryInNode =
-    queryInNodeHelp Nothing
 
 
 queryInNodeHelp : Maybe Int -> Selector -> ElmHtml -> List ElmHtml
@@ -148,11 +147,10 @@ queryInNodeHelp maxDescendantDepth selector node =
                 _ -> []
 
         MarkdownNode { facts, model } ->
-            case selector of
-                if predicateFromSelector selector node then
-                    [ node ]
-                else
-                    []
+            if predicateFromSelector selector node then
+                [ node ]
+            else
+                []
         _ ->
             []
 
