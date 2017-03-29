@@ -12,6 +12,7 @@ module ElmHtml.Query
         , queryByTagName
         , queryByAttribute
         , queryByBoolAttribute
+        , getChildren
         )
 
 {-|
@@ -20,6 +21,7 @@ Query things using ElmHtml
 @docs Selector
 @docs query, queryAll, queryChildren, queryChildrenAll, queryInNode
 @docs queryById, queryByClassName, queryByClassList, queryByTagName, queryByAttribute, queryByBoolAttribute
+@docs getChildren
 -}
 
 import Dict
@@ -107,12 +109,25 @@ queryInNode : Selector -> ElmHtml -> List ElmHtml
 queryInNode =
     queryInNodeHelp Nothing
 
+
 {-| Query an ElmHtml node using a selector, considering both the node itself
 as well as all of its descendants.
 -}
 queryChildren : Selector -> ElmHtml -> List ElmHtml
 queryChildren =
     queryInNodeHelp (Just 1)
+
+
+{-| Returns just the immediate children of an ElmHtml node
+-}
+getChildren : ElmHtml -> List ElmHtml
+getChildren elmHtml =
+    case elmHtml of
+        NodeEntry { children } ->
+            children
+
+        _ ->
+            []
 
 
 {-| Query to ensure an ElmHtml node has all selectors given, without considering
@@ -144,13 +159,15 @@ queryInNodeHelp maxDescendantDepth selector node =
                     else
                         []
 
-                _ -> []
+                _ ->
+                    []
 
         MarkdownNode { facts, model } ->
             if predicateFromSelector selector node then
                 [ node ]
             else
                 []
+
         _ ->
             []
 
@@ -185,7 +202,8 @@ predicateFromSelector selector html =
             markdownModel
                 |> markdownPredicate selector
 
-        _ -> False
+        _ ->
+            False
 
 
 hasAllSelectors : List Selector -> ElmHtml -> Bool
@@ -239,7 +257,6 @@ containsAll a b =
         |> List.isEmpty
 
 
-
 nodeRecordPredicate : Selector -> (NodeRecord -> Bool)
 nodeRecordPredicate selector =
     case selector of
@@ -272,7 +289,7 @@ nodeRecordPredicate selector =
 
         Multiple selectors ->
             NodeEntry
-                 >> hasAllSelectors selectors
+                >> hasAllSelectors selectors
 
 
 markdownPredicate : Selector -> (MarkdownNodeRecord -> Bool)
