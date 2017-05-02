@@ -1,5 +1,5 @@
 {
-    "version": "1.2.0",
+    "version": "1.2.1",
     "summary": "Query for things inside ElmHtml",
     "repository": "https://github.com/eeue56/elm-html-query.git",
     "license": "BSD3",
