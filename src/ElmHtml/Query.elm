@@ -47,49 +47,49 @@ type Selector
 
 {-| Query for a node with a given tag in a Html element
 -}
-queryByTagName : String -> ElmHtml -> List ElmHtml
+queryByTagName : String -> ElmHtml msg -> List (ElmHtml msg)
 queryByTagName tagname =
     query (Tag tagname)
 
 
 {-| Query for a node with a given id in a Html element
 -}
-queryById : String -> ElmHtml -> List ElmHtml
+queryById : String -> ElmHtml msg -> List (ElmHtml msg)
 queryById id =
     query (Id id)
 
 
 {-| Query for a node with a given classname in a Html element
 -}
-queryByClassName : String -> ElmHtml -> List ElmHtml
+queryByClassName : String -> ElmHtml msg -> List (ElmHtml msg)
 queryByClassName classname =
     query (ClassName classname)
 
 
 {-| Query for a node with all the given classnames in a Html element
 -}
-queryByClassList : List String -> ElmHtml -> List ElmHtml
+queryByClassList : List String -> ElmHtml msg -> List (ElmHtml msg)
 queryByClassList classList =
     query (ClassList classList)
 
 
 {-| Query for a node with a given attribute in a Html element
 -}
-queryByAttribute : String -> String -> ElmHtml -> List ElmHtml
+queryByAttribute : String -> String -> ElmHtml msg -> List (ElmHtml msg)
 queryByAttribute key value =
     query (Attribute key value)
 
 
 {-| Query for a node with a given attribute in a Html element
 -}
-queryByBoolAttribute : String -> Bool -> ElmHtml -> List ElmHtml
+queryByBoolAttribute : String -> Bool -> ElmHtml msg -> List (ElmHtml msg)
 queryByBoolAttribute key value =
     query (BoolAttribute key value)
 
 
 {-| Query an ElmHtml element using a selector, searching all children.
 -}
-query : Selector -> ElmHtml -> List ElmHtml
+query : Selector -> ElmHtml msg -> List (ElmHtml msg)
 query selector =
     queryInNode selector
 
@@ -97,7 +97,7 @@ query selector =
 {-| Query an ElmHtml node using multiple selectors, considering both the node itself
 as well as all of its descendants.
 -}
-queryAll : List Selector -> ElmHtml -> List ElmHtml
+queryAll : List Selector -> ElmHtml msg -> List (ElmHtml msg)
 queryAll selectors =
     query (Multiple selectors)
 
@@ -105,7 +105,7 @@ queryAll selectors =
 {-| Query an ElmHtml node using a selector, considering both the node itself
 as well as all of its descendants.
 -}
-queryInNode : Selector -> ElmHtml -> List ElmHtml
+queryInNode : Selector -> ElmHtml msg -> List (ElmHtml msg)
 queryInNode =
     queryInNodeHelp Nothing
 
@@ -113,14 +113,14 @@ queryInNode =
 {-| Query an ElmHtml node using a selector, considering both the node itself
 as well as all of its descendants.
 -}
-queryChildren : Selector -> ElmHtml -> List ElmHtml
+queryChildren : Selector -> ElmHtml msg -> List (ElmHtml msg)
 queryChildren =
     queryInNodeHelp (Just 1)
 
 
 {-| Returns just the immediate children of an ElmHtml node
 -}
-getChildren : ElmHtml -> List ElmHtml
+getChildren : ElmHtml msg -> List (ElmHtml msg)
 getChildren elmHtml =
     case elmHtml of
         NodeEntry { children } ->
@@ -133,12 +133,12 @@ getChildren elmHtml =
 {-| Query to ensure an ElmHtml node has all selectors given, without considering
 any descendants lower than its immediate children.
 -}
-queryChildrenAll : List Selector -> ElmHtml -> List ElmHtml
+queryChildrenAll : List Selector -> ElmHtml msg -> List (ElmHtml msg)
 queryChildrenAll selectors =
     queryInNodeHelp (Just 1) (Multiple selectors)
 
 
-queryInNodeHelp : Maybe Int -> Selector -> ElmHtml -> List ElmHtml
+queryInNodeHelp : Maybe Int -> Selector -> ElmHtml msg -> List (ElmHtml msg)
 queryInNodeHelp maxDescendantDepth selector node =
     case node of
         NodeEntry record ->
@@ -172,7 +172,7 @@ queryInNodeHelp maxDescendantDepth selector node =
             []
 
 
-descendInQuery : Maybe Int -> Selector -> List ElmHtml -> List ElmHtml
+descendInQuery : Maybe Int -> Selector -> List (ElmHtml msg) -> List (ElmHtml msg)
 descendInQuery maxDescendantDepth selector children =
     case maxDescendantDepth of
         Nothing ->
@@ -191,7 +191,7 @@ descendInQuery maxDescendantDepth selector children =
                 []
 
 
-predicateFromSelector : Selector -> ElmHtml -> Bool
+predicateFromSelector : Selector -> ElmHtml msg -> Bool
 predicateFromSelector selector html =
     case html of
         NodeEntry record ->
@@ -206,14 +206,14 @@ predicateFromSelector selector html =
             False
 
 
-hasAllSelectors : List Selector -> ElmHtml -> Bool
+hasAllSelectors : List Selector -> ElmHtml msg -> Bool
 hasAllSelectors selectors record =
     List.map predicateFromSelector selectors
         |> List.map (\selector -> selector record)
         |> List.all identity
 
 
-hasAttribute : String -> String -> Facts -> Bool
+hasAttribute : String -> String -> Facts msg -> Bool
 hasAttribute attribute query facts =
     case Dict.get attribute facts.stringAttributes of
         Just id ->
@@ -223,7 +223,7 @@ hasAttribute attribute query facts =
             False
 
 
-hasBoolAttribute : String -> Bool -> Facts -> Bool
+hasBoolAttribute : String -> Bool -> Facts msg -> Bool
 hasBoolAttribute attribute value facts =
     case Dict.get attribute facts.boolAttributes of
         Just id ->
@@ -233,17 +233,17 @@ hasBoolAttribute attribute value facts =
             False
 
 
-hasClass : String -> Facts -> Bool
+hasClass : String -> Facts msg -> Bool
 hasClass query facts =
     List.member query (classnames facts)
 
 
-hasClasses : List String -> Facts -> Bool
+hasClasses : List String -> Facts msg -> Bool
 hasClasses classList facts =
     containsAll classList (classnames facts)
 
 
-classnames : Facts -> List String
+classnames : Facts msg -> List String
 classnames facts =
     Dict.get "className" facts.stringAttributes
         |> Maybe.withDefault ""
@@ -257,7 +257,7 @@ containsAll a b =
         |> List.isEmpty
 
 
-nodeRecordPredicate : Selector -> (NodeRecord -> Bool)
+nodeRecordPredicate : Selector -> (NodeRecord msg -> Bool)
 nodeRecordPredicate selector =
     case selector of
         Id id ->
@@ -292,7 +292,7 @@ nodeRecordPredicate selector =
                 >> hasAllSelectors selectors
 
 
-markdownPredicate : Selector -> (MarkdownNodeRecord -> Bool)
+markdownPredicate : Selector -> (MarkdownNodeRecord msg -> Bool)
 markdownPredicate selector =
     case selector of
         Id id ->
