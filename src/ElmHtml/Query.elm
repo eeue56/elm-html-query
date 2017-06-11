@@ -9,6 +9,7 @@ module ElmHtml.Query
         , queryById
         , queryByClassName
         , queryByClassList
+        , queryByStyle
         , queryByTagName
         , queryByAttribute
         , queryByBoolAttribute
@@ -20,7 +21,7 @@ Query things using ElmHtml
 
 @docs Selector
 @docs query, queryAll, queryChildren, queryChildrenAll, queryInNode
-@docs queryById, queryByClassName, queryByClassList, queryByTagName, queryByAttribute, queryByBoolAttribute
+@docs queryById, queryByClassName, queryByClassList, queryByStyle, queryByTagName, queryByAttribute, queryByBoolAttribute
 @docs getChildren
 -}
 
@@ -41,6 +42,7 @@ type Selector
     | Tag String
     | Attribute String String
     | BoolAttribute String Bool
+    | Style (List ( String, String ))
     | ContainsText String
     | Multiple (List Selector)
 
@@ -71,6 +73,13 @@ queryByClassName classname =
 queryByClassList : List String -> ElmHtml msg -> List (ElmHtml msg)
 queryByClassList classList =
     query (ClassList classList)
+
+
+{-| Query for a node with the given style in a Html element
+-}
+queryByStyle : List ( String, String ) -> ElmHtml msg -> List (ElmHtml msg)
+queryByStyle style =
+    query (Style style)
 
 
 {-| Query for a node with a given attribute in a Html element
@@ -243,6 +252,11 @@ hasClasses classList facts =
     containsAll classList (classnames facts)
 
 
+hasStyle : List ( String, String ) -> Facts msg -> Bool
+hasStyle style facts =
+    containsAll style (Dict.toList facts.styles)
+
+
 classnames : Facts msg -> List String
 classnames facts =
     Dict.get "className" facts.stringAttributes
@@ -284,6 +298,10 @@ nodeRecordPredicate selector =
             .facts
                 >> hasBoolAttribute key value
 
+        Style style ->
+            .facts
+                >> hasStyle style
+
         ContainsText text ->
             always False
 
@@ -317,6 +335,10 @@ markdownPredicate selector =
         BoolAttribute key value ->
             .facts
                 >> hasBoolAttribute key value
+
+        Style style ->
+            .facts
+                >> hasStyle style
 
         ContainsText text ->
             .model
